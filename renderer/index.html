@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+<title>ByteBouncer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ====== header / quick connect ====== -->
+  <header class="topbar">
+    <div class="brand">
+      <img src="logo.png" alt="">
+      <div>
+        <div class="brand-name">ByteBouncer</div>
+        <div class="brand-ver" id="brandVer">v—</div>
+      </div>
+    </div>
+    <form class="quickconnect" id="qc" autocomplete="off">
+      <label>Host <input id="qcHost" placeholder="ftp.example.com" spellcheck="false"></label>
+      <label>Port <input id="qcPort" placeholder="21" size="5"></label>
+      <label>Username <input id="qcUser" placeholder="anonymous" spellcheck="false"></label>
+      <label>Password <input id="qcPass" type="password"></label>
+      <label>Protocol
+        <select id="qcProto">
+          <option value="ftp">FTP (plain)</option>
+          <option value="ftps">FTPS (explicit TLS)</option>
+          <option value="ftps-implicit">FTPS (implicit TLS)</option>
+          <option value="sftp">SFTP (SSH)</option>
+        </select>
+      </label>
+      <button type="submit" class="btn btn-accent" id="btnConnect">Quickconnect</button>
+      <button type="button" class="btn" id="btnDisconnect" disabled>Disconnect</button>
+    </form>
+    <div class="topbar-right">
+      <button class="btn" id="btnSites" title="Site manager">Site Manager</button>
+      <button class="btn" id="btnSettings" title="Settings">Settings</button>
+    </div>
+  </header>
+
+  <!-- ====== status strip ====== -->
+  <div class="strip">
+    <span class="dot" id="connDot"></span>
+    <span id="connText">Not connected</span>
+    <span class="sep"></span>
+    <span class="meter"><span class="k">Speed</span><span class="v" id="stSpeed">0 B/s</span></span>
+    <span class="meter"><span class="k">Active</span><span class="v" id="stActive">0</span></span>
+    <span class="meter"><span class="k">Connections</span><span class="v" id="stConn">0 / 0</span></span>
+    <span class="meter"><span class="k">Queued</span><span class="v" id="stQueued">0</span></span>
+    <canvas id="spark" width="180" height="26"></canvas>
+    <span class="grow"></span>
+    <span class="vpn" id="vpnBadge"><span class="dot" id="vpnDot"></span><span id="vpnText">VPN: checking…</span></span>
+    <button class="btn small" id="btnVpn" title="Launch the Proton VPN app">Open Proton VPN</button>
+    <label class="toggle"><input type="checkbox" id="chkLog" checked> Log</label>
+  </div>
+
+  <!-- ====== message log ====== -->
+  <section class="log" id="logPane">
+    <div class="log-body" id="log"></div>
+  </section>
+
+  <!-- ====== file panes ====== -->
+  <section class="panes">
+    <div class="pane" id="paneLocal">
+      <div class="pane-head">
+        <span class="pane-title">Local site</span>
+        <button class="icon" id="localUp" title="Parent folder">&#8679;</button>
+        <input id="localPath" class="path" spellcheck="false">
+        <select id="localDrives" title="Drives"></select>
+        <button class="icon" id="localRefresh" title="Refresh">&#8635;</button>
+        <button class="icon" id="localBrowse" title="Choose folder…">&#128193;</button>
+      </div>
+      <div class="pane-body">
+        <table class="files" id="localTable">
+          <thead><tr><th class="c-name">Name</th><th class="c-size">Size</th><th class="c-type">Type</th><th class="c-date">Modified</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pane-foot" id="localFoot">—</div>
+    </div>
+
+    <div class="pane-gap">
+      <button class="btn-arrow" id="btnUpload" title="Upload selected (→)">&#10140;</button>
+      <button class="btn-arrow" id="btnDownload" title="Download selected (←)">&#11013;</button>
+    </div>
+
+    <div class="pane" id="paneRemote">
+      <div class="pane-head">
+        <span class="pane-title">Remote site</span>
+        <button class="icon" id="remoteUp" title="Parent folder">&#8679;</button>
+        <input id="remotePath" class="path" spellcheck="false" placeholder="/" disabled>
+        <button class="icon" id="remoteRefresh" title="Refresh">&#8635;</button>
+        <button class="icon" id="remoteMkdir" title="New folder">&#10010;</button>
+      </div>
+      <div class="pane-body">
+        <table class="files" id="remoteTable">
+          <thead><tr><th class="c-name">Name</th><th class="c-size">Size</th><th class="c-type">Type</th><th class="c-date">Modified</th><th class="c-perm">Perm</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty" id="remoteEmpty">Not connected to any server.</div>
+      </div>
+      <div class="pane-foot" id="remoteFoot">—</div>
+    </div>
+  </section>
+
+  <!-- ====== transfer queue ====== -->
+  <section class="queue">
+    <div class="queue-head">
+      <span class="pane-title">Transfer queue</span>
+      <span class="grow"></span>
+      <button class="btn small" id="btnPause">Pause queue</button>
+      <button class="btn small" id="btnClear">Clear finished</button>
+    </div>
+    <div class="queue-body">
+      <table class="files" id="queueTable">
+        <thead><tr><th class="c-dir"></th><th class="c-name">File</th><th class="c-size">Size</th><th class="c-prog">Progress</th><th class="c-speed">Speed</th><th class="c-conn">Conn.</th><th class="c-status">Status</th><th class="c-act"></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- context menu -->
+<ul class="ctx" id="ctx"></ul>
+
+<!-- ====== Site manager modal ====== -->
+<div class="modal" id="mSites">
+  <div class="modal-box wide">
+    <div class="modal-head">Site Manager <button class="icon close" data-close="mSites">&times;</button></div>
+    <div class="sites">
+      <div class="site-list">
+        <ul id="siteList"></ul>
+        <div class="row"><button class="btn small" id="siteNew">New site</button><button class="btn small" id="siteDelete">Delete</button></div>
+      </div>
+      <form class="site-form" id="siteForm">
+        <label>Name <input id="sName"></label>
+        <label>Host <input id="sHost" spellcheck="false"></label>
+        <label>Port <input id="sPort" placeholder="21"></label>
+        <label>Protocol
+          <select id="sProto">
+            <option value="ftp">FTP (plain)</option>
+            <option value="ftps">FTPS (explicit TLS)</option>
+            <option value="ftps-implicit">FTPS (implicit TLS)</option>
+            <option value="sftp">SFTP (SSH)</option>
+          </select>
+        </label>
+        <label>Username <input id="sUser" spellcheck="false"></label>
+        <label>Password <input id="sPass" type="password"></label>
+        <label id="sKeyRow">SSH private key <span class="withbtn"><input id="sKey" placeholder="(optional) path to key file" spellcheck="false"><button type="button" class="btn small" id="sKeyBrowse">…</button></span></label>
+        <label>Remote directory <input id="sDir" placeholder="/" spellcheck="false"></label>
+        <label>Local directory <input id="sLocal" spellcheck="false"></label>
+        <div class="row end">
+          <button type="button" class="btn" id="siteSave">Save</button>
+          <button type="button" class="btn btn-accent" id="siteConnect">Connect</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Settings modal ====== -->
+<div class="modal" id="mSettings">
+  <div class="modal-box">
+    <div class="modal-head">Settings <button class="icon close" data-close="mSettings">&times;</button></div>
+    <form class="settings-form" id="settingsForm">
+      <h4>Bandwidth</h4>
+      <label>Simultaneous file transfers <input type="number" id="setMaxTransfers" min="1" max="32"></label>
+      <label>Connections per file (segmented download) <input type="number" id="setConnPerFile" min="1" max="32"></label>
+      <label>Max total data connections <input type="number" id="setMaxConn" min="1" max="128"></label>
+      <label>Minimum segment size (MB) <input type="number" id="setSegMin" min="0.25" step="0.25"></label>
+      <p class="hint">Large files are split into segments fetched over several connections at once, so one download can use the whole pipe even when the server limits speed per connection. Many servers cap connections per IP at 8–10; lower the totals if you see "too many connections" errors.</p>
+      <h4>VPN</h4>
+      <label>Require a VPN tunnel before transferring (kill switch) <input type="checkbox" id="setRequireVpn"></label>
+      <p class="hint">ByteBouncer watches your network adapters. With this on, transfers only run while a Proton VPN (or other VPN) tunnel is up; if the tunnel drops mid-transfer, active transfers stop immediately and resume automatically when it returns. ByteBouncer never sees your VPN login — use the official Proton VPN app.</p>
+      <h4>Files</h4>
+      <label>If local file exists
+        <select id="setOverwrite"><option value="overwrite">Overwrite</option><option value="skip">Skip</option></select>
+      </label>
+      <label>Default download folder <input id="setDownloadDir" spellcheck="false"></label>
+      <label>Accept any TLS certificate (self-signed servers) <input type="checkbox" id="setAnyCert"></label>
+      <label>Timeout (seconds) <input type="number" id="setTimeout" min="5" max="600"></label>
+      <div class="row end"><button type="submit" class="btn btn-accent">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- ====== Prompt modal ====== -->
+<div class="modal" id="mPrompt">
+  <div class="modal-box">
+    <div class="modal-head" id="promptTitle">Input</div>
+    <form id="promptForm"><input id="promptInput" spellcheck="false"><div class="row end"><button type="button" class="btn" data-close="mPrompt">Cancel</button><button type="submit" class="btn btn-accent">OK</button></div></form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

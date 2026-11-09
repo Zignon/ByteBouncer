@@ -1,0 +1,6 @@
+{
+  "_comment": "Fill these from Partner Center > your app > Product management > Product identity. The Publisher value must match EXACTLY (including CN=). Version must be x.y.z.0 for the Store.",
+  "identityName": "SenseiLemon.ByteBouncer",
+  "publisher": "CN=CACA4A31-C5CF-4665-B37E-CCDB161106EE",
+  "publisherDisplayName": "Sensei Lemon"
+}

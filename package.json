@@ -1,0 +1,73 @@
+{
+  "name": "bytebouncer",
+  "productName": "ByteBouncer",
+  "version": "1.2.0",
+  "description": "ByteBouncer - a multi-connection FTP/FTPS client that uses your full download bandwidth",
+  "main": "main/main.js",
+  "author": "ByteBouncer",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "dist:store": "electron-builder --win appx --x64"
+  },
+  "dependencies": {
+    "basic-ftp": "^5.0.5",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.bytebouncer.app",
+    "productName": "ByteBouncer",
+    "artifactName": "ByteBouncer-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "legalTrademarks": "ByteBouncer"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ByteBouncer",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "license": "build/LICENSE.txt",
+      "runAfterFinish": true
+    },
+    "appx": {
+      "identityName": "SenseiLemon.ByteBouncer",
+      "publisher": "CN=CACA4A31-C5CF-4665-B37E-CCDB161106EE",
+      "publisherDisplayName": "Sensei Lemon",
+      "applicationId": "ByteBouncer",
+      "displayName": "ByteBouncer",
+      "backgroundColor": "#0054b7",
+      "languages": [
+        "en-US"
+      ],
+      "artifactName": "ByteBouncer-${version}-x64.${ext}"
+    }
+  }
+}
